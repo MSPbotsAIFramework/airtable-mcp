@@ -1,0 +1,150 @@
+[
+  {
+    "id": "TC-ATB-001",
+    "ac": "AC1",
+    "text": "Given a valid Airtable credential in X-Airtable-Api-Key, When airtable_list_bases is called, Then the response lists the bases that credential can access (id, name, permissionLevel per base)",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_bases_returns_accessible_bases"]
+  },
+  {
+    "id": "TC-ATB-002",
+    "ac": "AC8",
+    "text": "Given no X-Airtable-Api-Key header, When any tool is called, Then the response is 401 not_configured and no outbound call is made to Airtable",
+    "type": "auto",
+    "tests": ["tests/test_middleware.py::test_missing_credential_header_returns_401_without_calling_airtable"]
+  },
+  {
+    "id": "TC-ATB-003",
+    "ac": "AC2",
+    "text": "Given a known baseId, When airtable_list_tables is called, Then the response lists each table's id, name, primaryFieldId and fields (id, name, type)",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_tables_returns_schema_for_known_base"]
+  },
+  {
+    "id": "TC-ATB-004",
+    "ac": "AC2",
+    "text": "Given an unknown baseId, When airtable_list_tables is called, Then Airtable's 404 is mapped to not_found",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_tables_unknown_base_maps_to_not_found"]
+  },
+  {
+    "id": "TC-ATB-005",
+    "ac": "AC3",
+    "text": "Given fewer records exist than pageSize, When airtable_list_records is called, Then all matching records are returned and offset is null",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_records_returns_records_with_no_offset_when_all_fit_in_one_page"]
+  },
+  {
+    "id": "TC-ATB-006",
+    "ac": "AC3",
+    "text": "Given more records exist than pageSize, When airtable_list_records is called and then called again with the returned offset, Then the second call returns the next page with no record id repeated from the first page",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_records_offset_pagination_returns_next_page_without_duplicates"]
+  },
+  {
+    "id": "TC-ATB-007",
+    "ac": "AC3",
+    "text": "Given pageSize above 100, When airtable_list_records is called, Then the tool rejects it with invalid_argument before calling Airtable",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_records_rejects_page_size_over_100_without_calling_airtable"]
+  },
+  {
+    "id": "TC-ATB-008",
+    "ac": "AC4",
+    "text": "Given an existing recordId, When airtable_get_record is called, Then the record's id, createdTime and fields are returned",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_get_record_returns_fields_for_existing_record"]
+  },
+  {
+    "id": "TC-ATB-009",
+    "ac": "AC4",
+    "text": "Given a nonexistent recordId, When airtable_get_record is called, Then Airtable's 404 is mapped to not_found",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_get_record_unknown_id_maps_to_not_found"]
+  },
+  {
+    "id": "TC-ATB-010",
+    "ac": "AC5",
+    "text": "Given 1-10 field-sets, When airtable_create_records is called, Then that many records are created and returned, and a partialSuccess detail from Airtable is surfaced as a warning rather than dropped",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_create_records_creates_up_to_ten_records", "tests/test_tools.py::test_create_records_surfaces_partial_success_detail"]
+  },
+  {
+    "id": "TC-ATB-011",
+    "ac": "AC5",
+    "text": "Given 11 field-sets, When airtable_create_records is called, Then the tool rejects it with invalid_argument and makes no call to Airtable",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_create_records_rejects_more_than_ten_without_calling_airtable"]
+  },
+  {
+    "id": "TC-ATB-012",
+    "ac": "AC6",
+    "text": "Given 1-10 {id, fields} pairs, When airtable_update_records is called, Then only the given fields on those records change and other fields remain unchanged",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_update_records_only_changes_given_fields"]
+  },
+  {
+    "id": "TC-ATB-013",
+    "ac": "AC6",
+    "text": "Given a batch containing an id Airtable rejects, When airtable_update_records is called, Then the tool surfaces Airtable's error rather than reporting a partial update as fully applied",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_update_records_unknown_id_in_batch_surfaces_airtable_error"]
+  },
+  {
+    "id": "TC-ATB-014",
+    "ac": "AC7",
+    "text": "Given 1-10 explicit record ids, When airtable_delete_records is called, Then exactly those records are deleted and {id, deleted: true} is returned per id",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_delete_records_deletes_exact_ids_given"]
+  },
+  {
+    "id": "TC-ATB-015",
+    "ac": "AC7",
+    "text": "Given the airtable_delete_records tool schema, When inspected, Then it has no filterByFormula or query-style parameter, only an explicit record id list",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_delete_records_schema_has_no_filter_parameter"]
+  },
+  {
+    "id": "TC-ATB-016",
+    "ac": "AC9",
+    "text": "Given Airtable responds 429, When any write or read tool is called, Then the error is mapped to rate_limited with retryable true, within the tool's own retry budget",
+    "type": "auto",
+    "tests": ["tests/test_client.py::test_rate_limited_response_maps_to_retryable_rate_limited_error"]
+  },
+  {
+    "id": "TC-ATB-017",
+    "ac": "AC9",
+    "text": "Given Airtable responds 5xx, When any tool is called, Then the error is mapped to upstream_error with retryable true",
+    "type": "auto",
+    "tests": ["tests/test_client.py::test_server_error_response_maps_to_retryable_upstream_error"]
+  },
+  {
+    "id": "TC-ATB-018",
+    "ac": "AC10",
+    "text": "Given two concurrent requests carry different X-Airtable-Api-Key values, When both are handled at the same time, Then neither request's handler ever observes the other's credential value",
+    "type": "auto",
+    "tests": ["tests/test_middleware.py::test_concurrent_requests_do_not_cross_tenant_credentials"]
+  },
+  {
+    "id": "TC-ATB-019",
+    "ac": "AC11",
+    "text": "Given a request carries an invalid credential, When the request is handled and logged, Then the raw credential value never appears in captured log output",
+    "type": "auto",
+    "tests": ["tests/test_middleware.py::test_invalid_credential_never_appears_in_logs"]
+  },
+  {
+    "id": "TC-ATB-020",
+    "ac": "AC1",
+    "text": "Given a real Airtable Personal Access Token and a sandbox base, When airtable_list_bases then airtable_create_records are called through the deployed MCP service, Then the sandbox base is listed and the new record is visible in the Airtable web UI",
+    "type": "manual",
+    "steps": [
+      "Obtain a real Airtable Personal Access Token scoped to a disposable sandbox base (data.records:read, data.records:write, schema.bases:read)",
+      "Call airtable_list_bases with that token in X-Airtable-Api-Key and confirm the sandbox base appears",
+      "Call airtable_create_records against a table in that base with one field-set",
+      "Open the sandbox base in the Airtable web UI and locate the new record"
+    ],
+    "expect": "The sandbox base is present in the list_bases response; the record created via the tool call is visible in the Airtable UI with the fields that were sent",
+    "result": "untested",
+    "notes": "needs a real vendor account -- no Airtable test account is available to DEV01; per the vendor-mcp-development SOP this does not block delivery or the INT publish gate"
+  }
+]
